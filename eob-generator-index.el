@@ -6,33 +6,16 @@
   (interactive)
   (with-temp-buffer
     (insert-file-contents org-file nil 0 500)
-    (org-html-export-as-html)
+    (org-html-export-as-html nil nil nil t nil)
     (setq org-html (substring-no-properties (car kill-ring)))
-    (setq content (org-html-get-body-content org-html))
+    (setq content (org-html-get-content-without-toc org-html))
   )
 )
 
 (defun eob-generate-index(base-dir site-sub-dir)
   (interactive)
-  (let* ((sub-dir (file-name-as-directory
-                   (expand-file-name site-sub-dir base-dir)))
-         (absolute-org-files (eob-get-base-files sub-dir)))
-    (setq path-title-mtime-org-files
-          (mapcar (lambda (filename)
-                    (list (concat site-sub-dir
-                                  "/"
-                                  (s-chop-prefix sub-dir filename))
-                          (org-org-get-file-title filename)
-                          (org-org-get-file-mtime filename)))
-                  absolute-org-files))
-
-    (setq path-title-mtime-org-files
-          (sort path-title-mtime-org-files
-                #'(lambda (path-title-mtime1 path-title-mtime2)
-                    (not (time-less-p (nth 2 path-title-mtime1)
-                                      (nth 2 path-title-mtime2))))))
-
-    (setq N_all  (length path-title-mtime-org-files))
+  (let* ((post-list-all (eob-get-posts-with-properties base-dir site-sub-dir)))
+    (setq N_all  (length post-list-all))
     (setq n_list (float eob-page-per-index))
     (setq N_page (ceiling (/ N_all n_list)))
     (setq index_n 0)
@@ -50,20 +33,16 @@
       (setq post-list-ht (list ()))
       (setq i 0)
       (while (< i n_list)
-        (setq post_num (ceiling (+ (* n_list index_n) i)))
-        (cond ( (< post_num N_all)
-      		(setq path (car (nth post_num path-title-mtime-org-files)))
-        	(setq entry-part (eob-get-entry (expand-file-name path eob-project-directory)))
-      		(setq filenameHTML (concat "/" (concat (file-name-sans-extension path) ".html" )))
-      		(setq title (cadr (nth post_num path-title-mtime-org-files)))
-      		(setq date (format-time-string "%Y-%m-%d" (caddr (nth post_num path-title-mtime-org-files))))
-      		(add-to-list 'post-list-ht  (ht ("post-date" date) ("post-url" filenameHTML) ("post-title" title) ("post-entry" entry-part)))))
+        (setq post-num (ceiling (+ (* n_list index_n) i)))
+	(setq post-this  (nth post-num post-list-all))
+        (cond ( (< post-num N_all)
+      		(setq org-file (ht-get post-this "org-file-full-path"))
+        	(setq entry-part (eob-get-entry org-file))
+		(add-to-list 'post-list-ht (ht-merge post-this (ht ("post-entry" entry-part))))))
       	(setq i (1+ i))
       )
     (setq content-all (ht-create))
     (ht-set content-all "post-title" "Index")
-    (ht-set content-all "site-title" eob-title)
-    (ht-set content-all "site-author" eob-author-name)
     (ht-set  content-all "post-list" (reverse (butlast post-list-ht)))
     (ht-set  content-all "enable-page-pre" enable-page-pre)
     (ht-set  content-all "enable-page-next" enable-page-next)
@@ -71,6 +50,7 @@
     (ht-set  content-all "page-next" page-next)
     (ht-set content-all "head" (eob-generate-head nil "Home"))
     (ht-set content-all "navigation" (eob-generate-navigation))
+    (setq content-all (ht-merge content-all (eob-get-common-info)))
     (with-temp-buffer
      (insert (eob-render "index.html" content-all))
      (when (file-writable-p index_file_name)

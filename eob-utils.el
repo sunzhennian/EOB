@@ -40,6 +40,18 @@
       :initial-value org-html-body
       :from-end t))))
 
+(defun org-html-get-content-without-toc (org-html)
+ (let ((toc-regexp "<div id=\"table-of-.*\">\\(.\\|\n\\)*?</div>")
+        (text-toc-regexp "<div id=\"text-table-of-.*\">\\(.\\|\n\\)*?</div>"))
+    (s-trim
+     (reduce
+      #'(lambda (regexp string)
+          (replace-regexp-in-string regexp "" string))
+      (list toc-regexp text-toc-regexp)
+      :initial-value org-html
+      :from-end t)))
+  )
+
 
 (defun org-org-get-file-properties (org-file)
   (let ((org-file-string-list
@@ -172,5 +184,67 @@
                        "\\)$")))
     (org-publish-get-base-files-1 base-dir t match "index" nil)
     org-publish-temp-files))
+
+(defun eob-get-posts-sorted-time(base-dir site-sub-dir)
+  (interactive)
+  (let* ((sub-dir (file-name-as-directory
+                   (expand-file-name site-sub-dir base-dir)))
+         (absolute-org-files (eob-get-base-files sub-dir)))
+    (setq path-title-mtime-org-files
+          (mapcar (lambda (filename)
+                    (list (concat site-sub-dir
+                                  "/"
+                                  (s-chop-prefix sub-dir filename))
+                          (org-org-get-file-title filename)
+                          (org-org-get-file-mtime filename)))
+                  absolute-org-files))
+
+    (setq path-title-mtime-org-files
+          (sort path-title-mtime-org-files
+                #'(lambda (path-title-mtime1 path-title-mtime2)
+                    (not (time-less-p (nth 2 path-title-mtime1)
+                                      (nth 2 path-title-mtime2))))))
+    )
+    (setq post-list-ht (list ()))
+    (dotimes (i (length path-title-mtime-org-files))
+      (add-to-list 'post-list-ht (ht ("org-file" (car (nth i path-title-mtime-org-files))) ("id" (number-to-string i))))
+      )
+    (setq results (reverse (butlast post-list-ht)))
+)
+
+
+(defun eob-get-posts-with-properties(base-dir site-sub-dir)
+  (interactive)
+  (let ((post-list-sorted-time (eob-get-posts-sorted-time base-dir site-sub-dir)))
+  (setq post-list-p (list()))
+  (dotimes (i (length post-list-sorted-time))
+    (setq org-inner-properties (org-org-get-file-properties (ht-get (nth i post-list-sorted-time) "org-file")))
+    (setq post-ht (ht-merge  org-inner-properties  (nth i post-list-sorted-time)))
+    (ht-set post-ht "org-file-full-path" (expand-file-name (ht-get post-ht "org-file") eob-project-directory))
+    (ht-set post-ht "post-url" (concat "/" (concat (file-name-sans-extension (ht-get post-ht "org-file")) ".html" )))
+    (ht-set post-ht "DATE" (format-time-string "%Y-%m-%d" (org-org-get-file-mtime (ht-get post-ht "org-file-full-path"))))
+    (ht-set post-ht "Title"  (org-org-get-file-title (ht-get post-ht "org-file-full-path")))
+    (add-to-list 'post-list-p post-ht)
+    ))
+   (setq post-list-p (reverse (butlast post-list-p)))
+  (setq post-list-p-all (list()))
+  (dotimes (i (length post-list-p))
+    (setq temp (nth i post-list-p))
+    (if (= i 0) (ht-set temp "post-pre" nil) (ht-set temp "post-pre" (nth (1- i) post-list-p)))
+    (if (= i (1- (length post-list-p))) (ht-set temp "post-next" nil) (ht-set temp "post-next" (nth (1+ i) post-list-p)))
+    (add-to-list 'post-list-p-all temp)
+    )
+  (setq results (reverse (butlast post-list-p-all)))
+)
+
+
+(defun eob-get-common-info()
+    (interactive)
+    (let ((common-info (ht-create)))
+	  (ht-set common-info "site-title" eob-title)
+	  (ht-set common-info "site-author" eob-author-name)
+	  (ht-set common-info  "duoshuo-shortname" "sunzhennian")
+    (setq result common-info))
+    )
 
 (provide 'eob-utils)

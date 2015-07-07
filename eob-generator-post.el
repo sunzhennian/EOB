@@ -5,10 +5,10 @@
 (defun eob-get-content(org-file)
   (interactive)
   (find-file org-file)
-  (org-html-export-as-html)
+  (org-html-export-as-html nil nil nil t nil)
   (kill-buffer (file-name-nondirectory org-file))
   (setq org-html (substring-no-properties (car kill-ring)))
-  (setq content (org-html-get-body-content org-html))
+  (setq content (org-html-get-content-without-toc org-html))
 )
 
 (defun eob-generate-about(base-dir)
@@ -33,48 +33,18 @@
    (kill-buffer "*Org HTML Export*")
 )
 
+
 (defun eob-generate-post(base-dir site-sub-dir)
   (interactive)
-  (let* ((sub-dir (file-name-as-directory
-                   (expand-file-name site-sub-dir base-dir)))
-         (absolute-org-files (eob-get-base-files sub-dir)))
-    (setq path-title-mtime-org-files
-          (mapcar (lambda (filename)
-                    (list (concat site-sub-dir
-                                  "/"
-                                  (s-chop-prefix sub-dir filename))
-                          (org-org-get-file-title filename)
-                          (org-org-get-file-mtime filename)))
-                  absolute-org-files))
-
-    (setq path-title-mtime-org-files
-          (sort path-title-mtime-org-files
-                #'(lambda (path-title-mtime1 path-title-mtime2)
-                    (not (time-less-p (nth 2 path-title-mtime1)
-                                      (nth 2 path-title-mtime2))))))
+  (let* ((post-list-all (eob-get-posts-with-properties base-dir site-sub-dir)))
     (setq i 0)
-    (while (< i (length path-title-mtime-org-files))
-      (setq post-file (nth i path-title-mtime-org-files))
-      (setq org-file-with-path (expand-file-name (car post-file) eob-project-directory))
-      (setq path (car post-file))
-      (setq filenameHTML (concat (file-name-sans-extension path) ".html" ))
-      (setq content-all (ht-create))
-      (ht-set content-all "context" (eob-get-content org-file-with-path))
-      (ht-set content-all "post-title" (org-org-get-file-title org-file-with-path))
-      (ht-set content-all "site-title" eob-title)
-      (ht-set content-all "site-author" eob-author-name)
-      (ht-set content-all "duoshuo-shortname" "sunzhennian")
-      (ht-set content-all "port-url" filenameHTML)
-      (ht-set content-all "head" (eob-generate-head org-file-with-path nil))
+    (while (< i (length post-list-all))
+      (setq content-all (nth i post-list-all))
+      (ht-set content-all "context" (eob-get-content (ht-get (nth i post-list-all) "org-file-full-path")))
+      (ht-set content-all "head" (eob-generate-head (ht-get (nth i post-list-all) "org-file-full-path") nil))
       (ht-set content-all "navigation" (eob-generate-navigation))
-      (if (= i 0) (ht-set content-all "pre-disable" "disabled"))
-      (if (= i (1- (length path-title-mtime-org-files))) (ht-set content-all "next-disable" "disabled"))
-      (ht-set content-all "port-pre" filenameHTML)
-      (if (not (= i (1- (length path-title-mtime-org-files))))
-      (ht-set content-all "post-next" (concat "/" (concat (file-name-sans-extension (car (nth (1+ i) path-title-mtime-org-files))) ".html" ))))
-      (if (not (= i 0))
-      (ht-set content-all "post-pre" (concat "/" (concat (file-name-sans-extension (car (nth (1- i) path-title-mtime-org-files))) ".html" ))))
-      (setq fileHTMLSave (expand-file-name filenameHTML eob-publish-directory))
+      (setq content-all (ht-merge content-all (eob-get-common-info)))
+      (setq fileHTMLSave (expand-file-name (substring (ht-get (nth i post-list-all) "post-url") 1) eob-publish-directory))
       (make-directory (file-name-directory fileHTMLSave) t)
 	(with-temp-buffer
           (insert (eob-render "post.html" content-all))
@@ -88,5 +58,4 @@
    (kill-buffer "*Org HTML Export*")
 )
   
-
 (provide 'eob-generator-post)
