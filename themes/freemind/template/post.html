@@ -9,8 +9,12 @@
             <div class="content">
                 <div class="page-header">
                     <h1>
-                        {{&post-title}}
+                        {{&Title}}
                     </h1>
+                    <div class="meta-widget">
+								<i class="fa fa-clock-o"></i>
+								{{&DATE}}
+							</div>
                 </div>
                 <div class="row post">
                     <!-- cols -->
@@ -21,13 +25,15 @@
                         <center>
                             <div class="pagination">
                                 <ul class="pagination">
-                                    <li class="prev {{&pre-disable}}">
-                                        <a href="{{&post-pre}}" class="alignleft prev">
+                                   {{#post-pre}}
+                                    <li class="prev">
+                                        <a href="{{&post-url}}" class="alignleft prev">
                                             <i class="fa fa-arrow-circle-o-left">
                                             </i>
                                             Prev
                                         </a>
                                     </li>
+                                    {{/post-pre}}
                                     <li>
                                         <a href="/archive">
                                             <i class="fa fa-archive">
@@ -35,13 +41,15 @@
                                             Archive
                                         </a>
                                     </li>
+                                    {{#post-next}}
                                     <li class="next {{&next-disable}}">
-                                        <a href="{{&post-next}}" class="alignright next">
+                                        <a href="{{&post-url}}" class="alignright next">
                                             Next
                                             <i class="fa fa-arrow-circle-o-right">
                                             </i>
                                         </a>
                                     </li>
+                                    {{/post-next}}
                                 </ul>
                             </div>
                         </center>
