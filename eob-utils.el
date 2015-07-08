@@ -241,9 +241,10 @@
   (let ((post-list-sorted-time (eob-get-posts-sorted-time base-dir site-sub-dir)))
   (setq post-list-p (list()))
   (dotimes (i (length post-list-sorted-time))
-    (setq org-inner-properties (org-org-get-file-properties (ht-get (nth i post-list-sorted-time) "org-file")))
+    (setq org-file-full-path (expand-file-name (ht-get (nth i post-list-sorted-time) "org-file") eob-project-directory))
+    (setq org-inner-properties (org-org-get-file-properties org-file-full-path))
     (setq post-ht (ht-merge  org-inner-properties  (nth i post-list-sorted-time)))
-    (ht-set post-ht "org-file-full-path" (expand-file-name (ht-get post-ht "org-file") eob-project-directory))
+    (ht-set post-ht "org-file-full-path" org-file-full-path)
     (ht-set post-ht "post-url" (concat "/" (concat (file-name-sans-extension (ht-get post-ht "org-file")) ".html" )))
     (ht-set post-ht "DATE" (format-time-string "%Y-%m-%d" (org-org-get-file-mtime (ht-get post-ht "org-file-full-path"))))
     (ht-set post-ht "Title"  (org-org-get-file-title (ht-get post-ht "org-file-full-path")))
@@ -268,6 +269,10 @@
 	  (ht-set common-info "site-author" eob-author-name)
 	  (ht-set common-info  "duoshuo-shortname" "sunzhennian")
     (setq result common-info))
+    )
+
+(defun eob-deploy
+    (interactive)
     )
 
 (provide 'eob-utils)

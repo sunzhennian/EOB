@@ -23,13 +23,17 @@
 )
 
 (defun eob-publish (project-dir &optional republish localhost)
-(interactive
-   (list (read-directory-name "Project directory: " eob-project-directory)
-         (y-or-n-p "Force republish all? ")
-         (unless (s-matches? "localhost" eob-url)
-           (y-or-n-p "Force publish in localhost mode? "))))
-(eob-pre-publish project-dir)
-(eob-post-publish project-dir)
+  (interactive
+  (list (read-directory-name "Project directory: " eob-project-directory)))
+  (dolist (file-or-dir (directory-files eob-publish-directory t))
+    (unless (equal "." (substring (file-name-nondirectory file-or-dir) 0 1 ))
+      (if (file-directory-p file-or-dir)
+                    (delete-directory file-or-dir t)
+                  (delete-file file-or-dir))
+	      )
+   )
+  (eob-pre-publish project-dir)
+  (eob-post-publish project-dir)
 )
 
 (provide 'eob-publish)
