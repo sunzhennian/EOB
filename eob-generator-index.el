@@ -1,17 +1,6 @@
 (require 'ox-publish)
 (require 'eob-utils)
 
-
-(defun eob-get-entry(org-file)
-  (interactive)
-  (with-temp-buffer
-    (insert-file-contents org-file nil 0 500)
-    (org-html-export-as-html nil nil nil t nil)
-    (setq org-html (substring-no-properties (car kill-ring)))
-    (setq content (org-html-get-content-without-toc org-html))
-  )
-)
-
 (defun eob-generate-index(base-dir site-sub-dir)
   (interactive)
   (let* ((post-list-all (eob-get-posts-with-properties base-dir site-sub-dir)))
