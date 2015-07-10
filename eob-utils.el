@@ -271,8 +271,18 @@
     (setq result common-info))
     )
 
-(defun eob-deploy
-    (interactive)
-    )
+(defun eob-deploy()
+  (interactive)  
+  (magit-status eob-publish-directory)
+  (magit-stage-modified t)
+  (magit-commit)
+  (progn
+  (set-buffer "COMMIT_EDITMSG")
+  (erase-buffer)
+  (insert (format "Site-updated at %s\n" (format-time-string "%Y-%m-%d  %T")))
+  (with-editor-finish t)
+  )
+  (magit-push "master" eob-github-url)
+)
 
 (provide 'eob-utils)
