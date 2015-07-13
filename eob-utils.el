@@ -272,17 +272,12 @@
     )
 
 (defun eob-deploy()
-  (interactive)  
-  (magit-status eob-publish-directory)
-  (magit-stage-modified t)
-  (magit-commit)
+  (interactive)
   (progn
-  (set-buffer "COMMIT_EDITMSG")
-  (erase-buffer)
-  (insert (format "Site-updated at %s\n" (format-time-string "%Y-%m-%d  %T")))
-  (with-editor-finish t)
-  )
-  (magit-push "master" eob-github-url)
+    (shell "deploy")
+    (set-buffer "deploy")
+    (insert (format "cd %s && git add -A . && git commit -m \"Site-update at %s\" && git push " eob-publish-directory (format-time-string "%Y-%m-%d T%"))) 
+  )  
 )
 
 (provide 'eob-utils)
