@@ -276,7 +276,7 @@
   (progn
     (shell "deploy")
     (set-buffer "deploy")
-    (insert (format "cd %s && git add -A . && git commit -m \"Site-update at %s\" && git push " eob-publish-directory (format-time-string "%Y-%m-%d T%"))) 
+    (insert (format "cd %s && git add -A . && git commit -m \"Site-update at %s\" && git push " eob-publish-directory (format-time-string "%Y-%m-%d %T"))) 
   )  
 )
 
